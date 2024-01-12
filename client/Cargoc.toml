@@ -1,0 +1,18 @@
+[package]
+name = "client"
+typ = "bin"
+gen_config = true
+src = ["src/", "src/editor/", "src/util"]
+
+[compiler]
+compiler = "clang++"
+flags = ["-std=c++20"]
+includes = ["../lib/glm/", "../lib/imgui/", "tcp/"]
+
+[linker]
+linker = "clang++"
+flags = ["/usr/local/lib/libglfw3.a", "-lm", "-lc"]
+libs = ["../lib/imgui/build/imgui.a", "tcp/target/debug/libtcp.a"]
+
+[dependencies]
+glad = { path = "../../glad/" }
