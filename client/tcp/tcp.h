@@ -41,6 +41,7 @@ struct FFIServerStatus {
 
 extern "C" {
     TcpStream ffi_connect_to_server(const char *addr);
+    void ffi_close_stream(TcpStream stream);
     FFIState ffi_state_query_form_server(TcpStream stream);
     void ffi_state_sync_with_server(TcpStream stream, FFIState state);
     FFIServerStatus ffi_server_await_message(TcpStream stream);

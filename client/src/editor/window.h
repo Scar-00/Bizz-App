@@ -12,12 +12,12 @@ public:
     void RenderEnd();
     GLFWwindow *GetHandle() const { return handle; }
     bool ShouldClose() { return glfwWindowShouldClose(handle); }
-    void SetSize(glm::vec2 size) { 
+    void SetSize(glm::vec2 size) {
         this->size = size;
         glfwSetWindowSize(this->handle, size.x, size.y);
     }
     glm::vec2 GetSize() const { return size; }
-    glm::vec2 GetPos() {
+    glm::vec2 GetPos() const {
         int xpos, ypos;
         glfwGetWindowPos(this->handle, &xpos, &ypos);
         return {xpos, ypos};

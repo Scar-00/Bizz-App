@@ -1,22 +1,9 @@
 #pragma once
 
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "editor/window.h"
-#include <memory>
-#include <tuple>
-#include <vector>
-#include <string>
-#include <tuple>
-#include "types.h"
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <unordered_map>
-#include <set>
-
-enum class Image {
-    Text,
-    Dir,
-    Image,
-};
 
 class Context {
 public:

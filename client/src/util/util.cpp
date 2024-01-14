@@ -1,8 +1,12 @@
 #include "util.h"
+#include <time.h>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 
-std::string PrintTime(tm t) {
-    char buf[128];
-    strftime(buf, 128, "%d-%m-%Y", &t);
+std::string PrintTime(tm t, const char *format) {
+    char buf[64];
+    strftime(buf, 64, format ? format : "%d.%m.%Y", &t);
     return {buf};
 }
 
@@ -14,7 +18,12 @@ tm TimeNow() {
 
 tm TimeFromPtr(const char *time) {
     tm tm;
-    strptime(time, "%d.%m.%Y", &tm);
+    std::istringstream ss{time};
+    ss >> std::get_time(&tm, "%d.%m.%Y");
+    if(ss.fail()) {
+        printf("failed to parse");
+        exit(1);
+    }
     return tm;
 }
 

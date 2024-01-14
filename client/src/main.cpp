@@ -25,16 +25,19 @@ int main(int argc, char **argv) {
 
     TcpConnection server_conn;
 
-    std::thread t{[](bool &logged_in, TcpConnection &server_conn, State &state) {
-        while(true) {
+    std::thread t{[](Window &window, bool &logged_in, TcpConnection &server_conn, State &state) {
+        while(!window.ShouldClose()) {
             if(logged_in) {
                 auto res = server_conn.AwaitServerMessage();
                 if(res.has_value()) {
                     state = res.value();
                 }
             }
+            if(window.ShouldClose()) {
+                break;
+            }
         }
-    }, std::ref(logged_in), std::ref(server_conn), std::ref(state)};
+    }, std::ref(window), std::ref(logged_in), std::ref(server_conn), std::ref(state)};
 
     while(!window.ShouldClose()) {
         window.RenderBegin();
@@ -57,6 +60,7 @@ int main(int argc, char **argv) {
 
             Editor::RenderGeneratorsWindow(state);
             Editor::RenderAccountsWindow(state);
+            Editor::RenderTodoWindow(state);
             if(state.changed) {
                 state.Sync(server_conn);
             }
@@ -67,8 +71,7 @@ int main(int argc, char **argv) {
 
         window.RenderEnd();
     }
-
+    t.detach();
     Context::Destroy();
-    t.join();
     return 0;
 }

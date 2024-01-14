@@ -3,12 +3,11 @@
 #include "../state.h"
 #include "../generators.h"
 #include "../accounts.h"
+#include "../imprints.h"
 
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <memory>
-#include <sstream>
-#include <format>
+#include <vector>
 
 namespace Editor {
 void BeginDocking() {
@@ -75,8 +74,9 @@ void RenderAccountsWindow(State &state) {
     ImGui::Begin("Accounts");
     if (ImGui::BeginTable("##Accounts", 2, ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders)) {
         for(size_t i = 0; i < state.accounts.size(); i ++) {
-            if(state.accounts[i].Display()) {
+            if(state.accounts[i].Display(state)) {
                 state.accounts.erase(state.accounts.cbegin() + i);
+                state.SetUpdated();
             }
         }
         ImGui::EndTable();
@@ -88,8 +88,8 @@ void RenderAccountsWindow(State &state) {
 
     auto win_size = Context::GetWindow().GetSize();
     ImGuiWindowFlags popup_flags = ImGuiWindowFlags_Modal | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
-    ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
-    ImGui::SetNextWindowPos(Center({win_size.x, win_size.y}, {200, 100}), ImGuiCond_Always);
+    ImGui::SetNextWindowViewport(ImGui::GetCurrentWindow()->ViewportId);
+    ImGui::SetNextWindowPos(ImVec2(Context::GetWindow().GetPos().x, Context::GetWindow().GetPos().y) + Center({win_size.x, win_size.y}, {200, 100}), ImGuiCond_Always);
     if(ImGui::BeginPopupModal("AddAccountPopup", NULL, popup_flags)) {
         ImGui::SetWindowSize({300, 0}, ImGuiCond_Once);
         static std::string name = {0};
@@ -97,15 +97,16 @@ void RenderAccountsWindow(State &state) {
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::Text("Name:");
         ImGui::SameLine(112);
-        ImGui::InputText("##Location", &name);
+        ImGui::InputText("##Name", &name);
         ImGui::Text("Password:");
         ImGui::SameLine(112);
-        ImGui::InputText("##Element", &password);
+        ImGui::InputText("##Password", &password);
 
         ImGui::PopItemWidth();
         AlignMultipleElemetsOnLine({50, 50});
         if(ImGui::Button("Ok", { 50, 0 })) {
             state.accounts.push_back(Account{name, password});
+            state.SetUpdated();
             name.clear();
             password.clear();
             ImGui::CloseCurrentPopup();
@@ -132,7 +133,8 @@ void RenderGeneratorsWindow(State &state) {
         ImGui::TableHeadersRow();
         for(size_t i = 0; i < state.generators.size(); i ++) {
             if(state.generators[i].Display()) {
-                state.RemoveGenerator(i);
+                state.generators.erase(state.generators.cbegin() + i);
+                state.SetUpdated();
             }
         }
         ImGui::EndTable();
@@ -143,8 +145,8 @@ void RenderGeneratorsWindow(State &state) {
 
     auto win_size = Context::GetWindow().GetSize();
     ImGuiWindowFlags popup_flags = ImGuiWindowFlags_Modal | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove;
-    ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
-    ImGui::SetNextWindowPos(Center({win_size.x, win_size.y}, {200, 100}), ImGuiCond_Always);
+    ImGui::SetNextWindowViewport(ImGui::GetCurrentWindow()->ViewportId);
+    ImGui::SetNextWindowPos(ImVec2(Context::GetWindow().GetPos().x, Context::GetWindow().GetPos().y) + Center({win_size.x, win_size.y}, {200, 100}), ImGuiCond_Always);
     if(ImGui::BeginPopupModal("AddGeneratorPopup", NULL, popup_flags)) {
         ImGui::SetWindowSize({300, 0}, ImGuiCond_Once);
         static std::string location = {0};
@@ -168,7 +170,8 @@ void RenderGeneratorsWindow(State &state) {
         ImGui::PopItemWidth();
         AlignMultipleElemetsOnLine({50, 50});
         if(ImGui::Button("Ok", { 50, 0 })) {
-            state.AddGenerator({ location, (size_t)std::stoi(element), fill_time, fill_needed });
+            state.generators.push_back(Generator{ location, (size_t)std::stoi(element), fill_time, fill_needed });
+            state.SetUpdated();
             location.clear();
             element.clear();
             fill_time = {0};
@@ -188,6 +191,8 @@ void RenderGeneratorsWindow(State &state) {
     ImGui::End();
 }
 
+#define LOGIN_PADDING 112
+
 void RenderLoginWindow(Window &window, bool &logged_in, TcpConnection &server_conn, State &state) {
     ImGuiWindowFlags flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
     ImGui::SetNextWindowViewport(ImGui::GetMainViewport()->ID);
@@ -197,18 +202,39 @@ void RenderLoginWindow(Window &window, bool &logged_in, TcpConnection &server_co
     static std::string ip_string = DEFAULT_IP;
     static std::string password = {0};
     ImGui::Text("Ip:");
-    ImGui::SameLine(112);
+    ImGui::SameLine(LOGIN_PADDING);
     ImGui::InputText("Ip", &ip_string);
     ImGui::Text("Password:");
-    ImGui::SameLine(112);
+    ImGui::SameLine(LOGIN_PADDING);
     ImGui::InputText("Password", &password);
     ImGui::SetCursorPosX(CenterX(window.GetSize().x, 80) + 40);
     if(ImGui::Button("Ok", {80, 0})) {
-        server_conn.Connect("localhost:1000");
+        server_conn.Connect(ip_string.c_str());
         state = server_conn.QueryState();
         logged_in = true;
         window.SetSize({1904, 1080});
     }
+    ImGui::End();
+}
+
+void RenderTodoWindow(State &state) {
+    std::vector<Imprint> imprint_accounts {
+        { "Scar", { {"Stego", "HardUW", TimeNow(), 30, false }} },
+        { "Janschke" },
+        { "Koala" },
+        { "Panda" },
+        { "Rd" },
+        { "Nova" },
+    };
+
+    ImGui::Begin("Todo's");
+    for(auto imprint : imprint_accounts) {
+        if(ImGui::TreeNodeEx(imprint.acc, TREE_NODE_FLAGS)) {
+            imprint.Display(state);
+            ImGui::TreePop();
+        }
+    }
+
     ImGui::End();
 }
 }

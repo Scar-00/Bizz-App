@@ -4,6 +4,7 @@
 #include "../util/imgui_datechooser.h"
 #include "../types.h"
 
+#include <cstddef>
 #include <misc/cpp/imgui_stdlib.h>
 #include <ctime>
 #include <string>
@@ -11,7 +12,7 @@
 
 #define DEFAULT_IP "192.168.0.80"
 
-std::string PrintTime(tm t);
+std::string PrintTime(tm t, const char *format = NULL);
 tm TimeNow();
 tm TimeFromPtr(const char *time);
 f32 CenterX(f32 window_width, f32 target_width);

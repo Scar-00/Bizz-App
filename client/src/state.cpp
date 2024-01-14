@@ -19,22 +19,6 @@ void State::Sync(TcpConnection tcp_conn) {
     tcp_conn.SyncState(*this);
 }
 
-void State::AddGenerator(Generator gen) {
+void State::SetUpdated() {
     this->changed = true;
-    this->generators.push_back(gen);
-}
-
-void State::RemoveGenerator(size_t index) {
-    this->changed = true;
-    this->generators.erase(this->generators.cbegin() + index);
-}
-
-void State::AddAccount(Account acc) {
-    this->changed = true;
-    this->accounts.push_back(acc);
-}
-
-void State::RemoveAccount(size_t index) {
-    this->changed = true;
-    this->accounts.erase(this->accounts.cbegin() + index);
 }

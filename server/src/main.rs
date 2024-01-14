@@ -10,7 +10,8 @@ use std::sync::{
 use std::thread;
 
 static AUTH_TOKEN: &str = "DEV";
-static SERVER_IP: &str = "localhost:1000";
+//static SERVER_IP: &str = "localhost:1000";
+static SERVER_IP: &str = "192.168.0.186:1000";
 //static SERVER_IP: &str = "[2a02:908:d81:b9c0:da7d]:4000";
 
 #[derive(Debug)]
@@ -18,7 +19,7 @@ enum Message {
     Connected(Arc<TcpStream>),
     Disconnected(SocketAddr),
     Get(Arc<TcpStream>),
-    Update(State),
+    Update(SocketAddr, State),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -59,12 +60,15 @@ use std::net::SocketAddr;
 fn deploy_changes(
     clients: &mut HashMap<SocketAddr, Arc<TcpStream>>,
     state: &State,
+    src: SocketAddr,
 ) -> Result<(), ()> {
-    for (_, stream) in clients {
-        let state_string = serde_json::to_string(state).unwrap();
-        write!(stream.as_ref(), "{}", state_string).map_err(|e| {
-            eprintln!("[ERROR]: failed to send response: {e}");
-        })?;
+    for (addr, stream) in clients {
+        if src != *addr {
+            let state_string = serde_json::to_string(state).unwrap();
+            write!(stream.as_ref(), "{}", state_string).map_err(|e| {
+                eprintln!("[ERROR]: failed to send response: {e}");
+            })?;
+        }
     }
 
     return Ok(());
@@ -73,14 +77,12 @@ fn deploy_changes(
 fn server_handler(receiver: Receiver<Message>) -> Result<(), ()> {
     let mut clients = HashMap::new();
     let mut state = State {
-        gens: vec![
-            Generator{
-                loc: "Swamp Tp".to_owned(),
-                element: 10,
-                filled: "30.12.2023".to_owned(),
-                next_filling: "31.12.2023".to_owned(),
-            }
-        ],
+        gens: vec![Generator {
+            loc: "Swamp Tp".to_owned(),
+            element: 10,
+            filled: "30.12.2023".to_owned(),
+            next_filling: "31.12.2023".to_owned(),
+        }],
         accs: vec![Account {
             name: "test".to_owned(),
             password: "123".to_owned(),
@@ -96,14 +98,14 @@ fn server_handler(receiver: Receiver<Message>) -> Result<(), ()> {
             Message::Get(sender) => {
                 let msg = serde_json::to_string(&state).unwrap();
                 sender.as_ref().write(msg.as_bytes()).map_err(|e| {
-                     eprintln!("[ERROR]: failed to send response: {e}");
+                    eprintln!("[ERROR]: failed to send response: {e}");
                 })?;
             }
-            Message::Update(s) => {
+            Message::Update(sender, s) => {
                 state = s;
                 println!("{:#?}", state);
-                deploy_changes(&mut clients, &state)?;
-            },
+                deploy_changes(&mut clients, &state, sender)?;
+            }
             Message::Disconnected(addr) => {
                 clients.remove(&addr);
             }
@@ -161,7 +163,7 @@ fn client_handler(stream: Arc<TcpStream>, sender: Sender<Message>) -> Result<(),
                 sender
                     .send(match item {
                         Item::Get => Message::Get(stream.clone()),
-                        Item::Update(state) => Message::Update(state),
+                        Item::Update(state) => Message::Update(stream.peer_addr().unwrap(), state),
                     })
                     .map_err(|e| {
                         eprintln!("[ERROR]: failed to send meesage: {e}");

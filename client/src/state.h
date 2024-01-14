@@ -12,8 +12,5 @@ struct State {
     bool changed = false;
     static State Create(FFIState state);
     void Sync(TcpConnection tcp_conn);
-    void AddGenerator(Generator gen);
-    void RemoveGenerator(size_t index);
-    void AddAccount(Account acc);
-    void RemoveAccount(size_t index);
+    void SetUpdated();
 };
