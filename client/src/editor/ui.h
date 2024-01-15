@@ -14,6 +14,7 @@ namespace Editor {
     void BeginDocking();
     void RenderAccountsWindow(State &state);
     void RenderGeneratorsWindow(State &state);
+    void RenderBreedingWindow(State &state);
     void RenderLoginWindow(Window &window, bool &logged_in, TcpConnection &server_conn, State &state);
     void RenderTodoWindow(State &state);
 }

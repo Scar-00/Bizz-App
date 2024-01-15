@@ -191,6 +191,31 @@ void RenderGeneratorsWindow(State &state) {
     ImGui::End();
 }
 
+void RenderBreedingWindow(State &state) {
+    ImGui::Begin("Breeding");
+    for(auto imprint : state.imprints) {
+        std::string add_tame_popup = std::string{imprint.acc} + "AddTamePopup";
+
+        if(ImGui::BeginPopupModal(add_tame_popup.c_str())) {
+
+            ImGui::EndPopup();
+        }
+
+        bool active = ImGui::TreeNodeEx(imprint.acc, TREE_NODE_FLAGS);
+        if(ImGui::BeginPopupContextItem()) {
+            if(ImGui::Button("Add")) {
+                ImGui::OpenPopup(add_tame_popup.c_str());
+            }
+            ImGui::EndPopup();
+        }
+        if(active) {
+            imprint.Display(state);
+            ImGui::TreePop();
+        }
+    }
+    ImGui::End();
+}
+
 #define LOGIN_PADDING 112
 
 void RenderLoginWindow(Window &window, bool &logged_in, TcpConnection &server_conn, State &state) {
@@ -218,22 +243,8 @@ void RenderLoginWindow(Window &window, bool &logged_in, TcpConnection &server_co
 }
 
 void RenderTodoWindow(State &state) {
-    std::vector<Imprint> imprint_accounts {
-        { "Scar", { {"Stego", "HardUW", TimeNow(), 30, false }} },
-        { "Janschke" },
-        { "Koala" },
-        { "Panda" },
-        { "Rd" },
-        { "Nova" },
-    };
-
     ImGui::Begin("Todo's");
-    for(auto imprint : imprint_accounts) {
-        if(ImGui::TreeNodeEx(imprint.acc, TREE_NODE_FLAGS)) {
-            imprint.Display(state);
-            ImGui::TreePop();
-        }
-    }
+
 
     ImGui::End();
 }

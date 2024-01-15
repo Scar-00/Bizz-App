@@ -16,10 +16,10 @@ tm TimeNow() {
     return *localtime(&now);
 }
 
-tm TimeFromPtr(const char *time) {
+tm TimeFromPtr(const char *time, const char *format) {
     tm tm;
     std::istringstream ss{time};
-    ss >> std::get_time(&tm, "%d.%m.%Y");
+    ss >> std::get_time(&tm, format);
     if(ss.fail()) {
         printf("failed to parse");
         exit(1);

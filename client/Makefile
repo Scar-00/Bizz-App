@@ -61,3 +61,6 @@ run: build
 
 data: build
 		sed -e '1 s/./[ '\\\n'{/' -e '$$ s/,$$/'\\\n'] /' $(DATA) > compile_commands.json
+
+clean:
+		rm -rf $(BIN) $(DATA) $(OBJ)

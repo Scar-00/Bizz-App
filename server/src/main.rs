@@ -10,8 +10,8 @@ use std::sync::{
 use std::thread;
 
 static AUTH_TOKEN: &str = "DEV";
-//static SERVER_IP: &str = "localhost:1000";
-static SERVER_IP: &str = "192.168.0.186:1000";
+static SERVER_IP: &str = "localhost:1000";
+//static SERVER_IP: &str = "192.168.0.186:1000";
 //static SERVER_IP: &str = "[2a02:908:d81:b9c0:da7d]:4000";
 
 #[derive(Debug)]
@@ -26,6 +26,7 @@ enum Message {
 struct State {
     gens: Vec<Generator>,
     accs: Vec<Account>,
+    imprints: Vec<Imprint>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -43,10 +44,18 @@ struct Account {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-enum ItemType {
-    State,
-    Generators,
-    Accounts,
+struct Tame {
+    name: String,
+    loc: String,
+    needs_imprint: String,
+    amount: usize,
+    needs_feeding: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Imprint {
+    name: String,
+    tames: Vec<Tame>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -74,19 +83,42 @@ fn deploy_changes(
     return Ok(());
 }
 
+static IMPRINT_ACCOUNTS: &[&'static str] = &["Scar", "Janschke", "Koala", "Panda", "Rd", "Nova"];
+
 fn server_handler(receiver: Receiver<Message>) -> Result<(), ()> {
     let mut clients = HashMap::new();
     let mut state = State {
-        gens: vec![Generator {
-            loc: "Swamp Tp".to_owned(),
-            element: 10,
-            filled: "30.12.2023".to_owned(),
-            next_filling: "31.12.2023".to_owned(),
-        }],
+        gens: vec![
+            Generator {
+                loc: "Swamp Tp".to_owned(),
+                element: 10,
+                filled: "30.12.2023".to_owned(),
+                next_filling: "31.12.2023".to_owned(),
+            },
+            Generator {
+                loc: "[HUW] Crafting".to_owned(),
+                element: 2,
+                filled: "30.12.2023".to_owned(),
+                next_filling: "31.12.2023".to_owned(),
+            },
+        ],
         accs: vec![Account {
             name: "test".to_owned(),
             password: "123".to_owned(),
         }],
+        imprints: IMPRINT_ACCOUNTS
+            .iter()
+            .map(|a| Imprint {
+                name: a.to_string(),
+                tames: vec![Tame {
+                    name: "Stego".into(),
+                    loc: "HardUW".into(),
+                    needs_imprint: "4.00".into(),
+                    amount: 30,
+                    needs_feeding: false,
+                }],
+            })
+            .collect(),
     };
     loop {
         let msg = receiver.recv().expect("server has ung up");

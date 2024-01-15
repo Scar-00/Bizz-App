@@ -48,16 +48,7 @@ int main(int argc, char **argv) {
             //static bool open = true;
             //ImGui::ShowDemoWindow(&open);
 
-            ImGui::Begin("Breeding");
-            if (ImGui::BeginTable("split1", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders)) {
-                for (int i = 0; i < 10; i++){
-                    ImGui::TableNextColumn();
-                    ImGui::Text("Test");
-                }
-                ImGui::EndTable();
-            }
-            ImGui::End();
-
+            Editor::RenderBreedingWindow(state);
             Editor::RenderGeneratorsWindow(state);
             Editor::RenderAccountsWindow(state);
             Editor::RenderTodoWindow(state);

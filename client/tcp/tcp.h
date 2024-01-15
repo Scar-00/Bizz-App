@@ -16,11 +16,27 @@ struct FFIGenerator {
     const char *next;
 };
 
+struct FFITame {
+    const char *name;
+    const char *loc;
+    const char *needs_imprint;
+    size_t amount;
+    bool watch_food;
+};
+
+struct FFIImprint {
+    const char *name;
+    FFITame *tames;
+    size_t tames_len;
+};
+
 struct FFIState {
     FFIAccount *accounts;
     size_t accounts_len;
     FFIGenerator *generators;
     size_t generators_len;
+    FFIImprint *imprints;
+    size_t imprints_len;
 };
 
 struct FFIServerStatus {
