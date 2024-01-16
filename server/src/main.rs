@@ -1,13 +1,13 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::sync::Arc;
 use std::sync::{
     mpsc,
     mpsc::{Receiver, Sender},
 };
-use std::sync::{Arc, Mutex};
 use std::thread;
 
 static AUTH_TOKEN: &str = "DEV";
