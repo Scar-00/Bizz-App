@@ -6,7 +6,7 @@
 #include <ctime>
 
 void TcpConnection::Connect(const char *addr) {
-    stream = ffi_connect_to_server("localhost:1000");
+    stream = ffi_connect_to_server(addr);
 }
 
 void TcpConnection::Close() {

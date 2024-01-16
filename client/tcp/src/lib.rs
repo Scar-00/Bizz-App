@@ -280,7 +280,8 @@ pub struct Response {
 #[no_mangle]
 pub extern "C" fn ffi_connect_to_server(addr: CStr) -> *mut TcpStream {
     let addr = unsafe { std::ffi::CStr::from_ptr(addr).to_str().unwrap() };
-    let stream = Box::new(TcpStream::connect(addr).unwrap());
+    let stream =
+        Box::new(TcpStream::connect(addr).expect(&format!("Failed to connect to `{addr}`")));
     let _ = stream.as_ref().write(b"{ \"token\": \"DEV\" }");
     let mut buf: [u8; 256] = [0; 256];
     let n = stream

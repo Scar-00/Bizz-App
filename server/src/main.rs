@@ -1,12 +1,13 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
-use std::sync::Arc;
 use std::sync::{
     mpsc,
     mpsc::{Receiver, Sender},
 };
+use std::sync::{Arc, Mutex};
 use std::thread;
 
 static AUTH_TOKEN: &str = "DEV";
@@ -33,8 +34,8 @@ struct State {
 struct Generator {
     loc: String,
     element: usize,
-    filled: String,
-    next_filling: String,
+    filled: chrono::DateTime<Utc>,
+    next_filling: chrono::DateTime<Utc>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,7 +48,7 @@ struct Account {
 struct Tame {
     name: String,
     loc: String,
-    needs_imprint: String,
+    needs_imprint: chrono::DateTime<Utc>,
     amount: usize,
     needs_feeding: bool,
 }
@@ -69,10 +70,10 @@ use std::net::SocketAddr;
 fn deploy_changes(
     clients: &mut HashMap<SocketAddr, Arc<TcpStream>>,
     state: &State,
-    src: SocketAddr,
+    src: Option<SocketAddr>,
 ) -> Result<(), ()> {
     for (addr, stream) in clients {
-        if src != *addr {
+        if src != Some(*addr) {
             let state_string = serde_json::to_string(state).unwrap();
             write!(stream.as_ref(), "{}", state_string).map_err(|e| {
                 eprintln!("[ERROR]: failed to send response: {e}");
@@ -88,59 +89,66 @@ static IMPRINT_ACCOUNTS: &[&'static str] = &["Scar", "Janschke", "Koala", "Panda
 fn server_handler(receiver: Receiver<Message>) -> Result<(), ()> {
     let mut clients = HashMap::new();
     let mut state = State {
-        gens: vec![
-            Generator {
-                loc: "Swamp Tp".to_owned(),
-                element: 10,
-                filled: "30.12.2023".to_owned(),
-                next_filling: "31.12.2023".to_owned(),
-            },
-            Generator {
-                loc: "[HUW] Crafting".to_owned(),
-                element: 2,
-                filled: "30.12.2023".to_owned(),
-                next_filling: "31.12.2023".to_owned(),
-            },
-        ],
-        accs: vec![Account {
-            name: "test".to_owned(),
-            password: "123".to_owned(),
-        }],
+        gens: vec![],
+        accs: vec![],
         imprints: IMPRINT_ACCOUNTS
             .iter()
             .map(|a| Imprint {
                 name: a.to_string(),
                 tames: vec![Tame {
-                    name: "Stego".into(),
-                    loc: "HardUW".into(),
-                    needs_imprint: "4.00".into(),
-                    amount: 30,
+                    name: "test".into(),
+                    loc: "test".into(),
+                    needs_imprint: Utc::now(),
+                    amount: 10,
                     needs_feeding: false,
                 }],
             })
             .collect(),
     };
+    //loop over all time related things once every minute and send an update to the
+
+    let mut start = Utc::now();
     loop {
-        let msg = receiver.recv().expect("server has ung up");
-        match msg {
-            Message::Connected(stream) => {
-                println!("Client connected");
-                clients.insert(stream.peer_addr().unwrap(), stream.clone());
+        if let Ok(msg) = receiver.try_recv() {
+            match msg {
+                Message::Connected(stream) => {
+                    println!("Client connected");
+                    clients.insert(stream.peer_addr().unwrap(), stream.clone());
+                }
+                Message::Get(sender) => {
+                    let msg = serde_json::to_string(&state).unwrap();
+                    sender.as_ref().write(msg.as_bytes()).map_err(|e| {
+                        eprintln!("[ERROR]: failed to send response: {e}");
+                    })?;
+                }
+                Message::Update(sender, s) => {
+                    state = s;
+                    println!("{:#?}", state);
+                    deploy_changes(&mut clients, &state, Some(sender))?;
+                }
+                Message::Disconnected(addr) => {
+                    clients.remove(&addr);
+                }
             }
-            Message::Get(sender) => {
-                let msg = serde_json::to_string(&state).unwrap();
-                sender.as_ref().write(msg.as_bytes()).map_err(|e| {
-                    eprintln!("[ERROR]: failed to send response: {e}");
-                })?;
+        }
+
+        let diff = start.signed_duration_since(Utc::now());
+        //println!("diff: {}", diff);
+        //println!("??: {}", -chrono::Duration::seconds(10));
+        if diff <= -chrono::Duration::seconds(10) {
+            for gen in &mut state.gens {
+                if gen.filled.signed_duration_since(Utc::now()) >= chrono::Duration::hours(18) {
+                    gen.element -= 1;
+                }
             }
-            Message::Update(sender, s) => {
-                state = s;
-                println!("{:#?}", state);
-                deploy_changes(&mut clients, &state, sender)?;
+            for imprint in &mut state.imprints {
+                for tame in &mut imprint.tames {
+                    tame.needs_imprint -= chrono::Duration::minutes(1);
+                }
             }
-            Message::Disconnected(addr) => {
-                clients.remove(&addr);
-            }
+            start = Utc::now();
+            let _ = deploy_changes(&mut clients, &state, None);
+            println!("{:#?}", state);
         }
     }
 }
