@@ -12,3 +12,4 @@ crate-type=["staticlib"]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4.31", features = ["serde"] }
+middleware = { path = "../../middleware/" }

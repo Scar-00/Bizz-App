@@ -1,13 +1,13 @@
 #include "imprints.h"
-#include "imgui.h"
 #include "state.h"
 #include "editor/ui.h"
 #include "util/util.h"
 
+
+#include <imgui.h>
+
 static std::string PrintInt(int v) {
-    char buf[64];
-    itoa(v, buf, 10);
-    return {buf};
+    return std::to_string(v);
 }
 
 void Imprint::Display(State &state) {

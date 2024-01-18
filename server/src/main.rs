@@ -9,6 +9,8 @@ use std::sync::{
     mpsc::{Receiver, Sender},
 };
 use std::thread;
+use std::net::SocketAddr;
+use middleware::{Item, State, Imprint, Tame};
 
 static AUTH_TOKEN: &str = "DEV";
 static SERVER_IP: &str = "localhost:1000";
@@ -22,50 +24,6 @@ enum Message {
     Get(Arc<TcpStream>),
     Update(SocketAddr, State),
 }
-
-#[derive(Debug, Serialize, Deserialize)]
-struct State {
-    gens: Vec<Generator>,
-    accs: Vec<Account>,
-    imprints: Vec<Imprint>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Generator {
-    loc: String,
-    element: usize,
-    filled: chrono::DateTime<Utc>,
-    next_filling: chrono::DateTime<Utc>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Account {
-    name: String,
-    password: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Tame {
-    name: String,
-    loc: String,
-    needs_imprint: chrono::DateTime<Utc>,
-    amount: usize,
-    needs_feeding: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Imprint {
-    name: String,
-    tames: Vec<Tame>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-enum Item {
-    Get,
-    Update(State),
-}
-
-use std::net::SocketAddr;
 
 fn deploy_changes(
     clients: &mut HashMap<SocketAddr, Arc<TcpStream>>,
@@ -135,9 +93,10 @@ fn server_handler(receiver: Receiver<Message>) -> Result<(), ()> {
         let diff = start.signed_duration_since(Utc::now());
         //println!("diff: {}", diff);
         //println!("??: {}", -chrono::Duration::seconds(10));
-        if diff <= -chrono::Duration::seconds(10) {
+        println!("test: {},", chrono::Duration::hours(4));
+        if diff <= -chrono::Duration::seconds(60) {
             for gen in &mut state.gens {
-                if gen.filled.signed_duration_since(Utc::now()) >= chrono::Duration::hours(18) {
+                if gen.filled.signed_duration_since(Utc::now()) >= -chrono::Duration::hours(18) {
                     gen.element -= 1;
                 }
             }

@@ -1,92 +1,8 @@
-use serde::{Deserialize, Serialize};
 use std::io::{Read, Write};
 use std::net::TcpStream;
+use middleware::{Item, State, Imprint, Tame, Account, Generator};
 
 type CStr = *const std::ffi::c_char;
-
-#[derive(Debug, Serialize, Deserialize)]
-struct State {
-    gens: Vec<Generator>,
-    accs: Vec<Account>,
-    imprints: Vec<Imprint>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Generator {
-    loc: String,
-    element: usize,
-    filled: String,
-    next_filling: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Account {
-    name: String,
-    password: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Tame {
-    name: String,
-    loc: String,
-    needs_imprint: String,
-    amount: usize,
-    needs_feeding: bool,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct Imprint {
-    name: String,
-    tames: Vec<Tame>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-enum Item {
-    Get,
-    Update(State),
-}
-
-/*fn main() -> Result<(), ()> {
-    let mut stream = TcpStream::connect("192.168.0.186:1000").unwrap();
-    let _ = stream.write(b"{ \"token\": \"DEV\" }");
-    let mut buf: [u8; 256] = [0; 256];
-    let n = stream.read(&mut buf).map_err(|e| {
-        eprintln!("[ERROR]: failed to read from stream: {e}");
-    })?;
-
-    let buf = &buf[0..n];
-    let buf = std::str::from_utf8(buf).map_err(|e| {
-        eprintln!("[ERROR]: {e}");
-    })?;
-    println!("{buf}");
-
-    let message = Item::Get;
-    /*let message = Item::Update(ItemProps::Generators(vec![Generator {
-        loc: String::from("swamp"),
-        element: 10,
-        filled: "2020".to_string(),
-        next_filling: "2021".to_owned(),
-    }]));*/
-
-    let s = serde_json::to_string(&message).unwrap();
-    println!("req: {s}");
-    let _ = write!(stream, "{}", s);
-    let mut buf: [u8; 256] = [0; 256];
-    let n = stream.read(&mut buf).map_err(|e| {
-        eprintln!("[ERROR]: failed to read from stream: {e}");
-    })?;
-
-    let buf = &buf[0..n];
-    let buf = std::str::from_utf8(buf).map_err(|e| {
-        eprintln!("[ERROR]: {e}");
-    })?;
-    println!("res: {buf}");
-    let state: Vec<Account> = serde_json::from_str(buf).unwrap();
-
-    println!("state:\n{:#?}", state);
-
-    loop {}
-}*/
 
 macro_rules! to_cstr {
     ($s: expr) => {{
@@ -155,11 +71,15 @@ impl From<FFIState> for State {
                 .collect();
             let gens: Vec<_> = ffi_gens
                 .iter()
-                .map(|i| Generator {
-                    loc: from_cstr!(i.loc),
-                    element: i.element,
-                    filled: from_cstr!(i.last),
-                    next_filling: from_cstr!(i.next),
+                .map(|i| {
+                    let filled = chrono::DateTime::parse_from_str(&from_cstr!(i.last), "%d.%m.%Y").unwrap();
+                    let next_filling = chrono::DateTime::parse_from_str(&from_cstr!(i.next), "%d.%m.%Y").unwrap();
+                    Generator {
+                        loc: from_cstr!(i.loc),
+                        element: i.element,
+                        filled: filled.into(),
+                        next_filling: next_filling.into(),
+                    }
                 })
                 .collect();
             let imprints: Vec<_> = ffi_imprints
@@ -170,12 +90,18 @@ impl From<FFIState> for State {
                         name: from_cstr!(i.acc),
                         tames: ffi_tames
                             .iter()
-                            .map(|t| Tame {
-                                name: from_cstr!(t.name),
-                                loc: from_cstr!(t.loc),
-                                needs_imprint: from_cstr!(t.needs_imprint),
-                                amount: t.amount,
-                                needs_feeding: t.needs_feeding,
+                            .map(|t| {
+                                let now = chrono::Utc::now().format("%d.%m.%Y").to_string();
+                                let input = now + " -- +0000 -- " + &from_cstr!(t.needs_imprint);
+                                println!("input: {input}");
+                                let needs_imprint = chrono::DateTime::parse_from_str(&input, "%d.%m.%Y -- %z -- %H:%M").unwrap().into();
+                                Tame {
+                                    name: from_cstr!(t.name),
+                                    loc: from_cstr!(t.loc),
+                                    needs_imprint,
+                                    amount: t.amount,
+                                    needs_feeding: t.needs_feeding,
+                                }
                             })
                             .collect(),
                     };
@@ -212,8 +138,8 @@ impl Into<FFIState> for State {
             .map(|i| FFIGenrator {
                 loc: to_cstr!(i.loc),
                 element: i.element,
-                last: to_cstr!(i.filled),
-                next: to_cstr!(i.next_filling),
+                last: to_cstr!(i.filled.format("%d.%m.%Y").to_string()),
+                next: to_cstr!(i.next_filling.format("%d.%m.%Y").to_string()),
             })
             .collect();
         let imprints: Vec<_> = self
@@ -226,7 +152,7 @@ impl Into<FFIState> for State {
                     .map(|t| FFITame {
                         name: to_cstr!(t.name),
                         loc: to_cstr!(t.loc),
-                        needs_imprint: to_cstr!(t.needs_imprint),
+                        needs_imprint: to_cstr!(t.needs_imprint.format("%H:%M").to_string()),
                         amount: t.amount,
                         needs_feeding: t.needs_feeding,
                     })

@@ -6,7 +6,6 @@
 #include "../imprints.h"
 
 #include <imgui.h>
-#include <imgui_internal.h>
 #include <vector>
 
 namespace Editor {

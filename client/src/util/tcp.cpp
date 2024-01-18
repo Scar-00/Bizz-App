@@ -45,14 +45,14 @@ void TcpConnection::SyncState(State &state) {
         std::vector<FFITame> local_ffi_tames;
         std::vector<char *> time_strings;
         for(const auto &tame : imprint.tames) {
-            auto time_string = PrintTime(tame.needs_imprint, "%H.%M");
+            auto time_string = PrintTime(tame.needs_imprint, "%H:%M");
             auto string_alloc = (char *)malloc(time_strings.size() * sizeof(char));
             strncpy(string_alloc, time_string.c_str(), time_string.size());
             time_strings.push_back(string_alloc);
         }
         for(size_t i = 0; i < imprint.tames.size(); i++) {
             const auto &tame = imprint.tames[i];
-            local_ffi_tames.push_back(FFITame{ tame.name.c_str(), tame.loc.c_str(), /*time_strings[i].c_str()*/ "4.00", tame.amount, tame.watch_food });
+            local_ffi_tames.push_back(FFITame{ tame.name.c_str(), tame.loc.c_str(), /*time_strings[i].c_str()*/ "4:00", tame.amount, tame.watch_food });
         }
         ffi_tames.push_back(std::move(local_ffi_tames));
     }
