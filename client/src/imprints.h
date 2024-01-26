@@ -9,14 +9,14 @@ static const char *imprint_accounts[] = {"Scar", "Janschke", "Koala", "Panda", "
 struct Tame {
     std::string name;
     std::string loc;
-    tm needs_imprint;
+    size_t needs_imprint;
     size_t amount;
     bool watch_food;
 };
 
 struct State;
 struct Imprint {
-    const char *acc;
+    std::string acc;
     std::vector<Tame> tames;
     void Display(State &state);
 };

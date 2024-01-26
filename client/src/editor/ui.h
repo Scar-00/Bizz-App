@@ -9,6 +9,7 @@
 #include <tcp.h>
 
 #define TREE_NODE_FLAGS (ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap)
+#define POPUP_FLAGS (ImGuiWindowFlags_Modal | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove)
 
 namespace Editor {
     void BeginDocking();
@@ -16,5 +17,4 @@ namespace Editor {
     void RenderGeneratorsWindow(State &state);
     void RenderBreedingWindow(State &state);
     void RenderLoginWindow(Window &window, bool &logged_in, TcpConnection &server_conn, State &state);
-    void RenderTodoWindow(State &state);
 }

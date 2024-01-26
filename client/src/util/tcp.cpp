@@ -43,22 +43,14 @@ void TcpConnection::SyncState(State &state) {
     std::vector<std::vector<FFITame>> ffi_tames;
     for(const auto &imprint : state.imprints) {
         std::vector<FFITame> local_ffi_tames;
-        std::vector<char *> time_strings;
         for(const auto &tame : imprint.tames) {
-            auto time_string = PrintTime(tame.needs_imprint, "%H:%M");
-            auto string_alloc = (char *)malloc(time_strings.size() * sizeof(char));
-            strncpy(string_alloc, time_string.c_str(), time_string.size());
-            time_strings.push_back(string_alloc);
-        }
-        for(size_t i = 0; i < imprint.tames.size(); i++) {
-            const auto &tame = imprint.tames[i];
-            local_ffi_tames.push_back(FFITame{ tame.name.c_str(), tame.loc.c_str(), /*time_strings[i].c_str()*/ "4:00", tame.amount, tame.watch_food });
+            local_ffi_tames.push_back(FFITame{ tame.name.c_str(), tame.loc.c_str(), tame.needs_imprint, tame.amount, tame.watch_food });
         }
         ffi_tames.push_back(std::move(local_ffi_tames));
     }
     for(size_t i = 0; i < state.imprints.size(); i++) {
         const auto &imprint = state.imprints[i];
-        ffi_imprints.push_back(FFIImprint{ imprint.acc, &ffi_tames[i][0], ffi_tames[i].size() });
+        ffi_imprints.push_back(FFIImprint{ imprint.acc.c_str(), &ffi_tames[i][0], ffi_tames[i].size() });
     }
 
     FFIState ffi_state = { &ffi_accounts[0], ffi_accounts.size(), &ffi_gens[0], ffi_gens.size(), &ffi_imprints[0], ffi_imprints.size() };

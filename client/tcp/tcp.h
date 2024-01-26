@@ -19,7 +19,7 @@ struct FFIGenerator {
 struct FFITame {
     const char *name;
     const char *loc;
-    const char *needs_imprint;
+    size_t needs_imprint;
     size_t amount;
     bool watch_food;
 };

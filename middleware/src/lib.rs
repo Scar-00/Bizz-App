@@ -26,7 +26,7 @@ pub struct Account {
 pub struct Tame {
     pub name: String,
     pub loc: String,
-    pub needs_imprint: chrono::DateTime<Utc>,
+    pub needs_imprint: usize,
     pub amount: usize,
     pub needs_feeding: bool,
 }

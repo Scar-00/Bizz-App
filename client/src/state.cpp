@@ -18,7 +18,7 @@ State State::Create(FFIState state) {
         FFIImprint *imprint = &state.imprints[i];
         std::vector<Tame> tames;
         for(size_t j = 0; j < imprint->tames_len; j++) {
-            tames.push_back(Tame{ imprint->tames[j].name, imprint->tames[j].loc, TimeFromPtr(imprint->tames[j].needs_imprint, "%H:%M"), imprint->tames[j].amount, imprint->tames[j].watch_food });
+            tames.push_back(Tame{ imprint->tames[j].name, imprint->tames[j].loc, imprint->tames[j].needs_imprint, imprint->tames[j].amount, imprint->tames[j].watch_food });
         }
         self.imprints.push_back(Imprint{ imprint->name, std::move(tames) });
     }

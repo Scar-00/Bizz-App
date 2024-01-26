@@ -13,7 +13,7 @@ static void glfw_error_callback(int error, const char* description) {
 }
 
 Window::Window(glm::vec2 size): size(size) {
-    //glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+    glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
     glfwSetErrorCallback(glfw_error_callback);
     if(!glfwInit())
         std::exit(1);
@@ -23,7 +23,6 @@ Window::Window(glm::vec2 size): size(size) {
     handle = glfwCreateWindow(size.x, size.y, "BizZ Manager", NULL, NULL);
     if(!handle)
         std::exit(1);
-
 
     glfwMakeContextCurrent(handle);
     glfwSwapInterval(1);

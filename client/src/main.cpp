@@ -13,15 +13,7 @@ int main(int argc, char **argv) {
     Context::Create(window);
     bool logged_in = false;
 
-    State state; /*= {
-        {
-            {"Test", "fghdfg"},
-            {"Test1", "opjgpdm"}
-        }, {
-            {"HardUW", 10, TimeNow(), TimeNow()},
-            {"HardUW Back", 2, TimeNow(), TimeNow()}
-        }
-    };*/
+    State state;
 
     TcpConnection server_conn;
 
@@ -31,6 +23,9 @@ int main(int argc, char **argv) {
                 auto res = server_conn.AwaitServerMessage();
                 if(res.has_value()) {
                     state = res.value();
+                }
+                else {
+                    break;
                 }
             }
             if(window.ShouldClose()) {
@@ -51,7 +46,6 @@ int main(int argc, char **argv) {
             Editor::RenderBreedingWindow(state);
             Editor::RenderGeneratorsWindow(state);
             Editor::RenderAccountsWindow(state);
-            Editor::RenderTodoWindow(state);
             if(state.changed) {
                 state.Sync(server_conn);
             }

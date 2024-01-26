@@ -10,7 +10,7 @@ use std::sync::{
 };
 use std::thread;
 use std::net::SocketAddr;
-use middleware::{Item, State, Imprint, Tame};
+use middleware::{Item, State};
 
 static AUTH_TOKEN: &str = "DEV";
 static SERVER_IP: &str = "localhost:1000";
@@ -42,28 +42,13 @@ fn deploy_changes(
     return Ok(());
 }
 
-static IMPRINT_ACCOUNTS: &[&'static str] = &["Scar", "Janschke", "Koala", "Panda", "Rd", "Nova"];
-
 fn server_handler(receiver: Receiver<Message>) -> Result<(), ()> {
     let mut clients = HashMap::new();
     let mut state = State {
         gens: vec![],
         accs: vec![],
-        imprints: IMPRINT_ACCOUNTS
-            .iter()
-            .map(|a| Imprint {
-                name: a.to_string(),
-                tames: vec![Tame {
-                    name: "test".into(),
-                    loc: "test".into(),
-                    needs_imprint: Utc::now(),
-                    amount: 10,
-                    needs_feeding: false,
-                }],
-            })
-            .collect(),
+        imprints: vec![],
     };
-    //loop over all time related things once every minute and send an update to the
 
     let mut start = Utc::now();
     loop {
@@ -91,18 +76,19 @@ fn server_handler(receiver: Receiver<Message>) -> Result<(), ()> {
         }
 
         let diff = start.signed_duration_since(Utc::now());
-        //println!("diff: {}", diff);
-        //println!("??: {}", -chrono::Duration::seconds(10));
-        println!("test: {},", chrono::Duration::hours(4));
         if diff <= -chrono::Duration::seconds(60) {
             for gen in &mut state.gens {
                 if gen.filled.signed_duration_since(Utc::now()) >= -chrono::Duration::hours(18) {
-                    gen.element -= 1;
+                    if gen.element == 0 {
+                        gen.element -= 1;
+                    }
                 }
             }
             for imprint in &mut state.imprints {
                 for tame in &mut imprint.tames {
-                    tame.needs_imprint -= chrono::Duration::minutes(1);
+                    if tame.needs_imprint != 0 {
+                        tame.needs_imprint -= 1;
+                    }
                 }
             }
             start = Utc::now();
@@ -152,7 +138,16 @@ fn client_handler(stream: Arc<TcpStream>, sender: Sender<Message>) -> Result<(),
     loop {
         let n = stream.as_ref().read(&mut vec_buf).map_err(|e| {
             eprintln!("[ERROR]: failed to read from stream: {e}");
+            let _ = sender.send(Message::Disconnected(stream.peer_addr().unwrap())).map_err(|e| {
+                eprintln!("[ERROR]: failed to send meesage: {e}");
+            });
         })?;
+        if n == 0 {
+            sender.send(Message::Disconnected(stream.peer_addr().unwrap())).map_err(|e| {
+                eprintln!("[ERROR]: failed to send meesage: {e}");
+            })?;
+            return Ok(());
+        }
         let buf = &vec_buf[0..n];
         let buf = std::str::from_utf8(buf).map_err(|e| {
             eprintln!("[ERROR]: {e}");
@@ -169,9 +164,7 @@ fn client_handler(stream: Arc<TcpStream>, sender: Sender<Message>) -> Result<(),
                     })?;
             }
             Err(e) => {
-                if n > 0 {
-                    println!("{e}");
-                }
+                println!("{e}");
             }
         }
         vec_buf = [0; 4096];

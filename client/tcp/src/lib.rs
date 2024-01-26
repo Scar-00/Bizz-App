@@ -33,7 +33,7 @@ struct FFIGenrator {
 struct FFITame {
     name: CStr,
     loc: CStr,
-    needs_imprint: CStr,
+    needs_imprint: usize,
     amount: usize,
     needs_feeding: bool,
 }
@@ -72,8 +72,10 @@ impl From<FFIState> for State {
             let gens: Vec<_> = ffi_gens
                 .iter()
                 .map(|i| {
-                    let filled = chrono::DateTime::parse_from_str(&from_cstr!(i.last), "%d.%m.%Y").unwrap();
-                    let next_filling = chrono::DateTime::parse_from_str(&from_cstr!(i.next), "%d.%m.%Y").unwrap();
+                    let filled_string = from_cstr!(i.last) + " -- 00.00 -- +0000";
+                    let filled = chrono::DateTime::parse_from_str(&filled_string, "%d.%m.%Y -- %M.%H -- %z").unwrap();
+                    let next_string = from_cstr!(i.next) + " -- 00.00 -- +0000";
+                    let next_filling = chrono::DateTime::parse_from_str(&next_string, "%d.%m.%Y -- %M.%H -- %z").unwrap();
                     Generator {
                         loc: from_cstr!(i.loc),
                         element: i.element,
@@ -91,14 +93,10 @@ impl From<FFIState> for State {
                         tames: ffi_tames
                             .iter()
                             .map(|t| {
-                                let now = chrono::Utc::now().format("%d.%m.%Y").to_string();
-                                let input = now + " -- +0000 -- " + &from_cstr!(t.needs_imprint);
-                                println!("input: {input}");
-                                let needs_imprint = chrono::DateTime::parse_from_str(&input, "%d.%m.%Y -- %z -- %H:%M").unwrap().into();
                                 Tame {
                                     name: from_cstr!(t.name),
                                     loc: from_cstr!(t.loc),
-                                    needs_imprint,
+                                    needs_imprint: t.needs_imprint,
                                     amount: t.amount,
                                     needs_feeding: t.needs_feeding,
                                 }
@@ -135,11 +133,15 @@ impl Into<FFIState> for State {
         let gens: Vec<_> = self
             .gens
             .into_iter()
-            .map(|i| FFIGenrator {
-                loc: to_cstr!(i.loc),
-                element: i.element,
-                last: to_cstr!(i.filled.format("%d.%m.%Y").to_string()),
-                next: to_cstr!(i.next_filling.format("%d.%m.%Y").to_string()),
+            .map(|i| {
+                let last_local = chrono::DateTime::<chrono::Local>::from(i.filled);
+                let next_local = chrono::DateTime::<chrono::Local>::from(i.next_filling);
+                FFIGenrator {
+                    loc: to_cstr!(i.loc),
+                    element: i.element,
+                    last: to_cstr!(last_local.format("%d.%m.%Y").to_string()),
+                    next: to_cstr!(next_local.format("%d.%m.%Y").to_string()),
+                }
             })
             .collect();
         let imprints: Vec<_> = self
@@ -152,7 +154,7 @@ impl Into<FFIState> for State {
                     .map(|t| FFITame {
                         name: to_cstr!(t.name),
                         loc: to_cstr!(t.loc),
-                        needs_imprint: to_cstr!(t.needs_imprint.format("%H:%M").to_string()),
+                        needs_imprint: t.needs_imprint,
                         amount: t.amount,
                         needs_feeding: t.needs_feeding,
                     })
@@ -281,7 +283,6 @@ pub enum FFIServerStatus {
 
 #[no_mangle]
 pub extern "C" fn ffi_server_await_message(stream: *mut TcpStream) -> FFIServerStatus {
-    println!("Received server update message");
     let mut stream = unsafe { stream.as_ref().unwrap() };
     let mut buf: [u8; 4096] = [0; 4096];
     let n = match stream.read(&mut buf) {
@@ -300,5 +301,6 @@ pub extern "C" fn ffi_server_await_message(stream: *mut TcpStream) -> FFIServerS
         .unwrap();
     println!("res: {buf}");
     let state: State = serde_json::from_str(buf).unwrap();
+    println!("Received server update message");
     return FFIServerStatus::Data(state.into());
 }

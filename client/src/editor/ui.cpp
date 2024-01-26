@@ -105,6 +105,7 @@ void RenderAccountsWindow(State &state) {
         AlignMultipleElemetsOnLine({50, 50});
         if(ImGui::Button("Ok", { 50, 0 })) {
             state.accounts.push_back(Account{name, password});
+            state.imprints.push_back(Imprint{ name, {} });
             state.SetUpdated();
             name.clear();
             password.clear();
@@ -191,27 +192,75 @@ void RenderGeneratorsWindow(State &state) {
 }
 
 void RenderBreedingWindow(State &state) {
+    auto win_size = Context::GetWindow().GetSize();
     ImGui::Begin("Breeding");
-    for(auto imprint : state.imprints) {
+    for(auto &imprint : state.imprints) {
         std::string add_tame_popup = std::string{imprint.acc} + "AddTamePopup";
 
-        if(ImGui::BeginPopupModal(add_tame_popup.c_str())) {
-
-            ImGui::EndPopup();
-        }
-
-        bool active = ImGui::TreeNodeEx(imprint.acc, TREE_NODE_FLAGS);
+        bool active = ImGui::TreeNodeEx(imprint.acc.c_str(), TREE_NODE_FLAGS);
         if(ImGui::BeginPopupContextItem()) {
-            if(ImGui::Button("Add")) {
+            if(ImGui::Button("Add##ImprintTame")) {
                 ImGui::OpenPopup(add_tame_popup.c_str());
+            }
+            ImGui::SetNextWindowViewport(ImGui::GetCurrentWindow()->ViewportId);
+            ImGui::SetNextWindowPos(ImVec2(Context::GetWindow().GetPos().x, Context::GetWindow().GetPos().y) + Center({win_size.x, win_size.y}, {200, 100}), ImGuiCond_Always);
+            if(ImGui::BeginPopupModal(add_tame_popup.c_str(), NULL, POPUP_FLAGS)) {
+                static std::string name = {0};
+                static std::string loc = {0};
+                static size_t hours, minutes = 0;
+                static size_t amount;
+                static bool needs_food = false;
+                ImGui::SetWindowSize({350, 0}, ImGuiCond_Once);
+                ImGui::Text("Name:");
+                ImGui::SameLine(112);
+                ImGui::InputText("##Name", &name);
+                ImGui::Text("Loc:");
+                ImGui::SameLine(112);
+                ImGui::InputText("##Loc", &loc);
+                ImGui::Text("Needs Imprint:");
+                ImGui::SameLine(112);
+                ImGui::DurationEdit("##TameNeedImprintEdit", (int *)&hours, (int *)&minutes);
+                ImGui::Text("Amount:");
+                ImGui::SameLine(112);
+                ImGui::InputInt("##TameAmountEdit", (int*)&amount, 1, 100, ImGuiInputTextFlags_CharsDecimal);
+                ImGui::Text("Needs food:");
+                ImGui::SameLine(112);
+                ImGui::Checkbox("##TameFoodEdit", &needs_food);
+
+                AlignMultipleElemetsOnLine({50, 50});
+                if(ImGui::Button("Ok", { 50, 0 })) {
+                    imprint.tames.push_back(Tame{ name, loc, ((hours * 60) + minutes), amount, needs_food });
+                    state.SetUpdated();
+
+                    name.clear();
+                    loc.clear();
+                    hours = 0;
+                    minutes = 0;
+                    amount = 0;
+                    needs_food = false;
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::SameLine();
+                if(ImGui::Button("Close", { 50, 0 })) {
+                    name.clear();
+                    loc.clear();
+                    hours = 0;
+                    minutes = 0;
+                    amount = 0;
+                    needs_food = false;
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::EndPopup();
             }
             ImGui::EndPopup();
         }
+
         if(active) {
             imprint.Display(state);
             ImGui::TreePop();
         }
     }
+
     ImGui::End();
 }
 
@@ -238,13 +287,6 @@ void RenderLoginWindow(Window &window, bool &logged_in, TcpConnection &server_co
         logged_in = true;
         window.SetSize({1904, 1080});
     }
-    ImGui::End();
-}
-
-void RenderTodoWindow(State &state) {
-    ImGui::Begin("Todo's");
-
-
     ImGui::End();
 }
 }

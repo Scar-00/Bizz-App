@@ -1,4 +1,6 @@
 #include "context.h"
+#include "util/util.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -26,6 +28,8 @@ Context::Context(Window &window): window(window) {
 
     //font = io.Fonts->AddFontFromFileTTF("C:/Users/fiffi/OneDrive/Desktop/Coding/gui/res/fonts/consola.ttf", 18);
 
+
+    //ImGui::StyleCustom();
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window.GetHandle(), true);
     ImGui_ImplOpenGL3_Init();

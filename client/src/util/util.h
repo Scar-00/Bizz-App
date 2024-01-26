@@ -19,4 +19,9 @@ f32 CenterX(f32 window_width, f32 target_width);
 f32 CenterY(f32 window_height, f32 target_height);
 ImVec2 Center(ImVec2 window_dims, ImVec2 target_dims);
 void AlignForWidth(float width, float alignment = 0.5f);
-void AlignMultipleElemetsOnLine(std::vector<f32> sizes);
+void AlignMultipleElemetsOnLine(std::vector<f32> sizes);\
+
+namespace ImGui {
+    bool DurationEdit(const char *id, int *hours, int *minutes);
+    void StyleCustom(void);
+}
